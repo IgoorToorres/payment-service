@@ -1,4 +1,4 @@
-package io.github.igoortoorres.payment_service;
+package io.github.igoortoorres.paymentservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

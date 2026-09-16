@@ -652,14 +652,14 @@ Dependências iniciais:
 ```text
 Spring Web
 Validation
-Spring Data JPA
-PostgreSQL Driver
-Flyway Migration
 ```
 
 Não adicionar inicialmente:
 
 ```text
+Spring Data JPA
+PostgreSQL Driver
+Flyway Migration
 Spring for Apache Kafka
 Spring for RabbitMQ
 Spring Security
@@ -2360,7 +2360,7 @@ O objetivo é conseguir abrir qualquer parte deste projeto e explicar:
 # 49. Status do projeto
 
 ```text
-[ ] Etapa 0 — Preparação
+[x] Etapa 0 — Preparação
 [ ] Etapa 1 — API inicial
 [ ] Etapa 2 — PostgreSQL
 [ ] Etapa 3 — Regras de domínio

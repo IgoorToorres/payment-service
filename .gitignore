@@ -1,0 +1,95 @@
+# Java / Maven build output
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.jmod
+
+# Keep Maven Wrapper binaries versioned when present
+!.mvn/wrapper/maven-wrapper.jar
+
+# Maven generated files
+HELP.md
+.flattened-pom.xml
+dependency-reduced-pom.xml
+pom.xml.asc
+pom.xml.next
+pom.xml.releaseBackup
+pom.xml.tag
+pom.xml.versionsBackup
+release.properties
+
+# Test and coverage reports outside the build directory
+.coverage/
+.jacoco/
+jacoco.exec
+
+# Logs, JVM dumps and runtime files
+*.log
+logs/
+*.pid
+*.hprof
+*.jfr
+hs_err_pid*
+replay_pid*
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+application-local.yaml
+application-secret.properties
+application-secret.yml
+application-secret.yaml
+src/main/resources/application-local.properties
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+src/main/resources/application-secret.properties
+src/main/resources/application-secret.yml
+src/main/resources/application-secret.yaml
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse / Spring Tool Suite
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# Visual Studio Code
+.vscode/
+
+# Operating-system metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# Temporary and backup files
+*.swp
+*.swo
+*.tmp
+*.temp
+*.bak
+*~

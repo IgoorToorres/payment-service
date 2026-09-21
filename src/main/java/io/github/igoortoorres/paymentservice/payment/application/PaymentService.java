@@ -4,40 +4,39 @@ import io.github.igoortoorres.paymentservice.payment.domain.Payment;
 import io.github.igoortoorres.paymentservice.payment.domain.PaymentRepository;
 import io.github.igoortoorres.paymentservice.payment.error.ResourceNotFound;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class PaymentService {
-    private PaymentRepository repository;
+    private final PaymentRepository repository;
 
-    public PaymentService(PaymentRepository repository){
+    public PaymentService(PaymentRepository repository) {
         this.repository = repository;
     }
 
-    public Payment create(CreatePaymentCommand command){
-        Payment payment = new Payment(
+    @Transactional
+    public Payment create(CreatePaymentCommand command) {
+        Payment payment = Payment.create(
                 command.amount(),
                 command.currency(),
                 command.paymentMethod(),
                 command.externalReference()
         );
 
-        Payment savedPayment = repository.save(payment);
-
-        return savedPayment;
+        return repository.save(payment);
     }
 
-    public Payment findById(UUID id){
-        Payment payment = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFound("payment nao encontrado"));
-
-        return payment;
+    @Transactional(readOnly = true)
+    public Payment findById(UUID id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFound("Pagamento não encontrado"));
     }
 
-    public List<Payment> findAll(){
-        List<Payment> payments = repository.findAll();
-        return payments;
+    @Transactional(readOnly = true)
+    public List<Payment> findAll() {
+        return repository.findAll();
     }
 }

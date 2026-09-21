@@ -87,6 +87,37 @@ public class Payment {
         }
     }
 
+    public void startProcessing() {
+        transitionFrom(PaymentStatus.CREATED, PaymentStatus.PROCESSING);
+    }
+
+    public void authorize() {
+        transitionFrom(PaymentStatus.PROCESSING, PaymentStatus.AUTHORIZED);
+    }
+
+    public void decline() {
+        transitionFrom(PaymentStatus.PROCESSING, PaymentStatus.DECLINED);
+    }
+
+    public void fail() {
+        transitionFrom(PaymentStatus.PROCESSING, PaymentStatus.FAILED);
+    }
+
+    public void settle() {
+        transitionFrom(PaymentStatus.AUTHORIZED, PaymentStatus.SETTLED);
+    }
+
+    private void transitionFrom(PaymentStatus expectedStatus, PaymentStatus newStatus) {
+        if (status != expectedStatus) {
+            throw new DomainException(
+                    "Transição inválida: pagamento no estado %s não pode mudar para %s; o estado esperado é %s"
+                            .formatted(status, newStatus, expectedStatus)
+            );
+        }
+
+        status = newStatus;
+    }
+
     private void validateAmount(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new DomainException("O valor da transação deve ser maior que zero");

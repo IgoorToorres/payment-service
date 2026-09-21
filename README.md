@@ -338,7 +338,7 @@ O sistema simulará uma empresa intermediadora de pagamentos.
 Um cliente enviará uma requisição:
 
 ```http
-POST /payments
+POST /api/payments
 ```
 
 Exemplo:
@@ -669,6 +669,36 @@ Prometheus
 
 Essas tecnologias serão introduzidas apenas quando houver um problema concreto para elas resolverem.
 
+## Executar a aplicação localmente
+
+Com Java 21, Docker e `make` instalados, execute:
+
+```bash
+make run
+```
+
+Esse comando inicia o PostgreSQL com Docker Compose e depois inicia a aplicação, que ficará disponível em `http://localhost:8080`. Para encerrar a aplicação, use `Ctrl+C`.
+
+Outros comandos disponíveis:
+
+```bash
+make test     # inicia o PostgreSQL e executa os testes
+make db-up    # inicia somente o PostgreSQL
+make db-down  # encerra o PostgreSQL
+```
+
+Para visualizar e testar os endpoints pelo Swagger UI, acesse:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+O contrato OpenAPI em JSON fica disponível em:
+
+```text
+http://localhost:8080/v3/api-docs
+```
+
 ---
 
 # 13. Estrutura prevista do repositório
@@ -756,7 +786,7 @@ Não copiar automaticamente este modelo sem discutir cada campo.
 ## Criar pagamento
 
 ```http
-POST /api/v1/payments
+POST /api/payments
 ```
 
 Header:
@@ -779,13 +809,13 @@ Body:
 ## Buscar pagamento
 
 ```http
-GET /api/v1/payments/{paymentId}
+GET /api/payments/{paymentId}
 ```
 
 ## Listar pagamentos
 
 ```http
-GET /api/v1/payments
+GET /api/payments
 ```
 
 Posteriormente:
@@ -797,7 +827,7 @@ Posteriormente:
 ## Reembolso
 
 ```http
-POST /api/v1/payments/{paymentId}/refund
+POST /api/payments/{paymentId}/refund
 ```
 
 ---
@@ -1117,7 +1147,7 @@ OpenTelemetry
 Fluxo observável:
 
 ```text
-POST /payments
+POST /api/payments
        │
        ▼
 Payment Service
@@ -1212,7 +1242,7 @@ Formato sugerido:
   "status": 404,
   "error": "PAYMENT_NOT_FOUND",
   "message": "Payment not found",
-  "path": "/api/v1/payments/123",
+  "path": "/api/payments/123",
   "correlationId": "abc-123"
 }
 ```
@@ -1467,9 +1497,9 @@ Sem Redis.
 Endpoints:
 
 ```http
-POST /payments
-GET /payments/{id}
-GET /payments
+POST /api/payments
+GET /api/payments/{id}
+GET /api/payments
 ```
 
 Estudar:
@@ -1705,7 +1735,7 @@ payment.process
 Fluxo:
 
 ```text
-POST /payments
+POST /api/payments
        │
        ▼
 Payment CREATED
@@ -2170,7 +2200,7 @@ Uma tarefa só estará pronta quando:
 O projeto estará concluído quando for possível demonstrar:
 
 ```text
-POST /payments
+POST /api/payments
 ```
 
 seguido de:
@@ -2361,8 +2391,8 @@ O objetivo é conseguir abrir qualquer parte deste projeto e explicar:
 
 ```text
 [x] Etapa 0 — Preparação
-[ ] Etapa 1 — API inicial
-[ ] Etapa 2 — PostgreSQL
+[x] Etapa 1 — API inicial
+[x] Etapa 2 — PostgreSQL
 [ ] Etapa 3 — Regras de domínio
 [ ] Etapa 4 — Idempotência
 [ ] Etapa 5 — Testes
@@ -2395,17 +2425,9 @@ O objetivo é conseguir abrir qualquer parte deste projeto e explicar:
 Começar exclusivamente pela:
 
 ```text
-ETAPA 0 — Preparação
+ETAPA 3 — Regras de domínio
 ```
 
-A IA deve primeiro revisar este README com **Igor Torres** e explicar de forma simples:
-
-1. Qual problema o sistema resolverá.
-2. Como funcionará o fluxo de um pagamento.
-3. Por que teremos vários componentes.
-4. Qual será a ordem de construção.
-5. Por que Kafka e RabbitMQ ainda NÃO serão utilizados na primeira etapa.
-
-Depois disso, iniciar a configuração do projeto Java 21 + Spring Boot.
+Antes de implementar, definir os estados do pagamento, suas transições válidas e quais operações serão responsáveis por cada mudança de estado.
 
 **Não pular etapas.**

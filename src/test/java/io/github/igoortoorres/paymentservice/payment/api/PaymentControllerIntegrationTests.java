@@ -11,6 +11,8 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -24,6 +26,20 @@ class PaymentControllerIntegrationTests {
     private MockMvc mockMvc;
 
     @Test
+    void shouldExposeOpenApiDocumentation() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.info.title").value("Payment Service API"))
+                .andExpect(jsonPath("$.info.version").value("1.0.0"))
+                .andExpect(jsonPath("$.paths['/api/payments'].post.responses['201']").exists())
+                .andExpect(jsonPath("$.paths['/api/payments'].get.responses['200']").exists())
+                .andExpect(jsonPath("$.paths['/api/payments/{id}'].get.responses['404']").exists());
+
+        mockMvc.perform(get("/swagger-ui/index.html"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void shouldCreateFindAndListPayment() throws Exception {
         String requestBody = """
                 {
@@ -34,7 +50,7 @@ class PaymentControllerIntegrationTests {
                 }
                 """;
 
-        MvcResult creationResult = mockMvc.perform(post("/api/payment")
+        MvcResult creationResult = mockMvc.perform(post("/api/payments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
@@ -52,14 +68,14 @@ class PaymentControllerIntegrationTests {
                 "$.id"
         );
 
-        mockMvc.perform(get("/api/payment/{id}", paymentId))
+        mockMvc.perform(get("/api/payments/{id}", paymentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(paymentId))
                 .andExpect(jsonPath("$.externalReference").value("ORDER-92831"));
 
-        mockMvc.perform(get("/api/payment"))
+        mockMvc.perform(get("/api/payments"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(paymentId));
+                .andExpect(jsonPath("$[*].id", hasItem(paymentId)));
     }
 
     @Test
@@ -73,20 +89,26 @@ class PaymentControllerIntegrationTests {
                 }
                 """;
 
-        mockMvc.perform(post("/api/payment")
+        mockMvc.perform(post("/api/payments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Falha na validação dos campos"))
+                .andExpect(jsonPath(
+                        "$.fieldErrors[*].field",
+                        hasItems("amount", "currency", "paymentMethod", "externalReference")
+                ));
     }
 
     @Test
     void shouldReturnNotFoundForUnknownPayment() throws Exception {
         UUID unknownId = UUID.randomUUID();
 
-        mockMvc.perform(get("/api/payment/{id}", unknownId))
+        mockMvc.perform(get("/api/payments/{id}", unknownId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("Not found"))
-                .andExpect(jsonPath("$.path").value("/api/payment/" + unknownId));
+                .andExpect(jsonPath("$.path").value("/api/payments/" + unknownId));
     }
 }

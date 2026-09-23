@@ -3,7 +3,7 @@
 run: db-up
 	./mvnw spring-boot:run
 
-test: db-up
+test:
 	./mvnw test
 
 db-up:

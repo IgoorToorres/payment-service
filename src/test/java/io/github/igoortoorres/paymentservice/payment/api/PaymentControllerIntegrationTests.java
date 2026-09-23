@@ -1,102 +1,107 @@
 package io.github.igoortoorres.paymentservice.payment.api;
 
-import com.jayway.jsonpath.JsonPath;
 import io.github.igoortoorres.paymentservice.TestcontainersConfiguration;
 import io.github.igoortoorres.paymentservice.payment.infrastructure.persistence.SpringDataPaymentRepository;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.MediaType;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.notNullValue;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
 class PaymentControllerIntegrationTests {
 
     private static final String IDEMPOTENCY_KEY = "payment-order-92831";
 
-    @Autowired
-    private MockMvc mockMvc;
+    @LocalServerPort
+    private int port;
 
     @Autowired
     private SpringDataPaymentRepository repository;
 
-    @Test
-    void shouldExposeOpenApiDocumentation() throws Exception {
-        mockMvc.perform(get("/v3/api-docs"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.info.title").value("Payment Service API"))
-                .andExpect(jsonPath("$.info.version").value("1.0.0"))
-                .andExpect(jsonPath("$.paths['/api/payments'].post.responses['201']").exists())
-                .andExpect(jsonPath("$.paths['/api/payments'].post.responses['200']").exists())
-                .andExpect(jsonPath("$.paths['/api/payments'].post.responses['409']").exists())
-                .andExpect(jsonPath("$.paths['/api/payments'].post.parameters[0].name")
-                        .value("Idempotency-Key"))
-                .andExpect(jsonPath("$.paths['/api/payments'].get.responses['200']").exists())
-                .andExpect(jsonPath("$.paths['/api/payments/{id}'].get.responses['404']").exists());
-
-        mockMvc.perform(get("/swagger-ui/index.html"))
-                .andExpect(status().isOk());
+    @BeforeEach
+    void setUp() {
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = port;
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        repository.deleteAll();
     }
 
     @Test
-    void shouldCreateFindAndListPayment() throws Exception {
-        String requestBody = """
-                {
-                  "amount": 199.90,
-                  "currency": "BRL",
-                  "paymentMethod": "PIX",
-                  "externalReference": "ORDER-92831"
-                }
-                """;
+    void shouldExposeOpenApiDocumentation() {
+        given()
+                .when()
+                .get("/v3/api-docs")
+                .then()
+                .statusCode(200)
+                .body("info.title", equalTo("Payment Service API"))
+                .body("info.version", equalTo("1.0.0"))
+                .body("paths.'/api/payments'.post.responses.'201'", notNullValue())
+                .body("paths.'/api/payments'.post.responses.'200'", notNullValue())
+                .body("paths.'/api/payments'.post.responses.'409'", notNullValue())
+                .body("paths.'/api/payments'.post.parameters.name", hasItem("Idempotency-Key"))
+                .body("paths.'/api/payments'.get.responses.'200'", notNullValue())
+                .body("paths.'/api/payments/{id}'.get.responses.'404'", notNullValue());
 
-        MvcResult creationResult = mockMvc.perform(post("/api/payments")
-                        .header("Idempotency-Key", IDEMPOTENCY_KEY)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").isNotEmpty())
-                .andExpect(jsonPath("$.amount").value(199.90))
-                .andExpect(jsonPath("$.currency").value("BRL"))
-                .andExpect(jsonPath("$.paymentMethod").value("PIX"))
-                .andExpect(jsonPath("$.externalReference").value("ORDER-92831"))
-                .andExpect(jsonPath("$.status").value("CREATED"))
-                .andExpect(jsonPath("$.createdAt").isNotEmpty())
-                .andReturn();
-
-        String paymentId = JsonPath.read(
-                creationResult.getResponse().getContentAsString(),
-                "$.id"
-        );
-
-        mockMvc.perform(get("/api/payments/{id}", paymentId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(paymentId))
-                .andExpect(jsonPath("$.externalReference").value("ORDER-92831"));
-
-        mockMvc.perform(get("/api/payments"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].id", hasItem(paymentId)));
+        given()
+                .when()
+                .get("/swagger-ui/index.html")
+                .then()
+                .statusCode(200);
     }
 
     @Test
-    void shouldRejectInvalidPayment() throws Exception {
+    void shouldCreateFindAndListPayment() {
+        String paymentId = given()
+                .header("Idempotency-Key", IDEMPOTENCY_KEY)
+                .contentType(ContentType.JSON)
+                .body(validRequestBody())
+                .when()
+                .post("/api/payments")
+                .then()
+                .statusCode(201)
+                .body("id", notNullValue())
+                .body("amount", equalTo(199.90f))
+                .body("currency", equalTo("BRL"))
+                .body("paymentMethod", equalTo("PIX"))
+                .body("externalReference", equalTo("ORDER-92831"))
+                .body("status", equalTo("CREATED"))
+                .body("createdAt", notNullValue())
+                .extract()
+                .path("id");
+
+        given()
+                .pathParam("id", paymentId)
+                .when()
+                .get("/api/payments/{id}")
+                .then()
+                .statusCode(200)
+                .body("id", equalTo(paymentId))
+                .body("externalReference", equalTo("ORDER-92831"));
+
+        given()
+                .when()
+                .get("/api/payments")
+                .then()
+                .statusCode(200)
+                .body("id", hasItem(paymentId));
+    }
+
+    @Test
+    void shouldRejectInvalidPayment() {
         String requestBody = """
                 {
                   "amount": 0,
@@ -106,52 +111,58 @@ class PaymentControllerIntegrationTests {
                 }
                 """;
 
-        mockMvc.perform(post("/api/payments")
-                        .header("Idempotency-Key", "invalid-payment-key")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.message").value("Falha na validação dos campos"))
-                .andExpect(jsonPath(
-                        "$.fieldErrors[*].field",
+        given()
+                .header("Idempotency-Key", "invalid-payment-key")
+                .contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/payments")
+                .then()
+                .statusCode(400)
+                .body("status", equalTo(400))
+                .body("message", equalTo("Falha na validação dos campos"))
+                .body(
+                        "fieldErrors.field",
                         hasItems("amount", "currency", "paymentMethod", "externalReference")
-                ));
+                );
     }
 
     @Test
-    void shouldReturnExistingPaymentForRepeatedIdempotencyKey() throws Exception {
-        String requestBody = validRequestBody();
+    void shouldReturnExistingPaymentForRepeatedIdempotencyKey() {
+        String paymentId = given()
+                .header("Idempotency-Key", IDEMPOTENCY_KEY)
+                .contentType(ContentType.JSON)
+                .body(validRequestBody())
+                .when()
+                .post("/api/payments")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
 
-        MvcResult firstRequest = mockMvc.perform(post("/api/payments")
-                        .header("Idempotency-Key", IDEMPOTENCY_KEY)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        String paymentId = JsonPath.read(
-                firstRequest.getResponse().getContentAsString(),
-                "$.id"
-        );
-
-        mockMvc.perform(post("/api/payments")
-                        .header("Idempotency-Key", IDEMPOTENCY_KEY)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(paymentId));
+        given()
+                .header("Idempotency-Key", IDEMPOTENCY_KEY)
+                .contentType(ContentType.JSON)
+                .body(validRequestBody())
+                .when()
+                .post("/api/payments")
+                .then()
+                .statusCode(200)
+                .body("id", equalTo(paymentId));
 
         assertThat(repository.countByIdempotencyKey(IDEMPOTENCY_KEY)).isEqualTo(1);
     }
 
     @Test
-    void shouldRejectIdempotencyKeyReusedWithDifferentData() throws Exception {
-        mockMvc.perform(post("/api/payments")
-                        .header("Idempotency-Key", IDEMPOTENCY_KEY)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(validRequestBody()))
-                .andExpect(status().isCreated());
+    void shouldRejectIdempotencyKeyReusedWithDifferentData() {
+        given()
+                .header("Idempotency-Key", IDEMPOTENCY_KEY)
+                .contentType(ContentType.JSON)
+                .body(validRequestBody())
+                .when()
+                .post("/api/payments")
+                .then()
+                .statusCode(201);
 
         String differentRequestBody = """
                 {
@@ -162,60 +173,74 @@ class PaymentControllerIntegrationTests {
                 }
                 """;
 
-        mockMvc.perform(post("/api/payments")
-                        .header("Idempotency-Key", IDEMPOTENCY_KEY)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(differentRequestBody))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.error").value("Conflict"))
-                .andExpect(jsonPath("$.message").value(
-                        "A chave de idempotência já foi utilizada com dados diferentes"
-                ));
+        given()
+                .header("Idempotency-Key", IDEMPOTENCY_KEY)
+                .contentType(ContentType.JSON)
+                .body(differentRequestBody)
+                .when()
+                .post("/api/payments")
+                .then()
+                .statusCode(409)
+                .body("status", equalTo(409))
+                .body("error", equalTo("Conflict"))
+                .body(
+                        "message",
+                        equalTo("A chave de idempotência já foi utilizada com dados diferentes")
+                );
     }
 
     @Test
-    void shouldRejectMissingIdempotencyKey() throws Exception {
-        mockMvc.perform(post("/api/payments")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(validRequestBody()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.message").value(
-                        "O header Idempotency-Key é obrigatório"
-                ));
+    void shouldRejectMissingIdempotencyKey() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(validRequestBody())
+                .when()
+                .post("/api/payments")
+                .then()
+                .statusCode(400)
+                .body("status", equalTo(400))
+                .body("message", equalTo("O header Idempotency-Key é obrigatório"));
     }
 
     @Test
-    void shouldRejectBlankOrOversizedIdempotencyKey() throws Exception {
-        mockMvc.perform(post("/api/payments")
-                        .header("Idempotency-Key", " ")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(validRequestBody()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(
-                        "A chave de idempotência é obrigatória"
-                ));
+    void shouldRejectBlankOrOversizedIdempotencyKey() {
+        given()
+                .header("Idempotency-Key", " ")
+                .contentType(ContentType.JSON)
+                .body(validRequestBody())
+                .when()
+                .post("/api/payments")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("A chave de idempotência é obrigatória"));
 
-        mockMvc.perform(post("/api/payments")
-                        .header("Idempotency-Key", "A".repeat(101))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(validRequestBody()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(
-                        "A chave de idempotência deve possuir no máximo 100 caracteres"
-                ));
+        given()
+                .header("Idempotency-Key", "A".repeat(101))
+                .contentType(ContentType.JSON)
+                .body(validRequestBody())
+                .when()
+                .post("/api/payments")
+                .then()
+                .statusCode(400)
+                .body(
+                        "message",
+                        equalTo("A chave de idempotência deve possuir no máximo 100 caracteres")
+                );
     }
 
     @Test
-    void shouldReturnNotFoundForUnknownPayment() throws Exception {
+    void shouldReturnNotFoundForUnknownPayment() {
         UUID unknownId = UUID.randomUUID();
 
-        mockMvc.perform(get("/api/payments/{id}", unknownId))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Not found"))
-                .andExpect(jsonPath("$.path").value("/api/payments/" + unknownId));
+        given()
+                .pathParam("id", unknownId)
+                .when()
+                .get("/api/payments/{id}")
+                .then()
+                .statusCode(404)
+                .body("status", equalTo(404))
+                .body("error", equalTo("Not found"))
+                .body("path", equalTo("/api/payments/" + unknownId));
     }
 
     private String validRequestBody() {

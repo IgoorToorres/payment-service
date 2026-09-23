@@ -64,6 +64,16 @@ class PaymentControllerIntegrationTests {
     }
 
     @Test
+    void shouldExposeApplicationHealth() {
+        given()
+                .when()
+                .get("/actuator/health")
+                .then()
+                .statusCode(200)
+                .body("status", equalTo("UP"));
+    }
+
+    @Test
     void shouldCreateFindAndListPayment() {
         String paymentId = given()
                 .header("Idempotency-Key", IDEMPOTENCY_KEY)

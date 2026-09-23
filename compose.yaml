@@ -2,18 +2,42 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: payment_db
-      POSTGRES_USER: payment
-      POSTGRES_PASSWORD: payment
+      POSTGRES_DB: ${POSTGRES_DB:-payment_db}
+      POSTGRES_USER: ${POSTGRES_USER:-payment}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-payment}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - payment_postgres_data:/var/lib/postgresql/data
+    networks:
+      - payment-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U payment -d payment_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: payment-service:local
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-payment_db}
+      DB_USERNAME: ${POSTGRES_USER:-payment}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-payment}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    networks:
+      - payment-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+
 volumes:
   payment_postgres_data:
+
+networks:
+  payment-network:
+    driver: bridge

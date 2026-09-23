@@ -15,6 +15,7 @@ public class Payment {
     private final String currency;
     private final PaymentMethod paymentMethod;
     private final String externalReference;
+    private final String idempotencyKey;
     private PaymentStatus status;
     private final Instant createdAt;
 
@@ -24,6 +25,7 @@ public class Payment {
             String currency,
             PaymentMethod paymentMethod,
             String externalReference,
+            String idempotencyKey,
             PaymentStatus status,
             Instant createdAt
     ) {
@@ -32,6 +34,7 @@ public class Payment {
         validateCurrency(currency);
         validatePaymentMethod(paymentMethod);
         validateExternalReference(externalReference);
+        validateIdempotencyKey(idempotencyKey);
         validateStatus(status);
         validateCreatedAt(createdAt);
 
@@ -40,6 +43,7 @@ public class Payment {
         this.currency = currency;
         this.paymentMethod = paymentMethod;
         this.externalReference = externalReference;
+        this.idempotencyKey = idempotencyKey;
         this.status = status;
         this.createdAt = createdAt;
     }
@@ -48,7 +52,8 @@ public class Payment {
             BigDecimal amount,
             String currency,
             PaymentMethod paymentMethod,
-            String externalReference
+            String externalReference,
+            String idempotencyKey
     ) {
         return new Payment(
                 UUID.randomUUID(),
@@ -56,6 +61,7 @@ public class Payment {
                 currency,
                 paymentMethod,
                 externalReference,
+                idempotencyKey,
                 PaymentStatus.CREATED,
                 Instant.now()
         );
@@ -67,6 +73,7 @@ public class Payment {
             String currency,
             PaymentMethod paymentMethod,
             String externalReference,
+            String idempotencyKey,
             PaymentStatus status,
             Instant createdAt
     ) {
@@ -76,6 +83,7 @@ public class Payment {
                 currency,
                 paymentMethod,
                 externalReference,
+                idempotencyKey,
                 status,
                 createdAt
         );
@@ -151,6 +159,16 @@ public class Payment {
 
         if (externalReference.length() > 100) {
             throw new DomainException("A referência externa deve possuir no máximo 100 caracteres");
+        }
+    }
+
+    private void validateIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new DomainException("A chave de idempotência é obrigatória");
+        }
+
+        if (idempotencyKey.length() > 100) {
+            throw new DomainException("A chave de idempotência deve possuir no máximo 100 caracteres");
         }
     }
 

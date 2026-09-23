@@ -7,7 +7,11 @@ import java.util.UUID;
 public interface PaymentRepository {
     Payment save(Payment payment);
 
+    boolean saveIfIdempotencyKeyAbsent(Payment payment);
+
     Optional<Payment> findById(UUID id);
 
     List<Payment> findAll();
+
+    Optional<Payment> findByIdempotencyKey(String idempotencyKey);
 }

@@ -17,6 +17,7 @@ class PaymentTests {
     private static final BigDecimal AMOUNT = new BigDecimal("199.90");
     private static final String CURRENCY = "BRL";
     private static final String EXTERNAL_REFERENCE = "ORDER-92831";
+    private static final String IDEMPOTENCY_KEY = "payment-order-92831";
 
     @Test
     void shouldCreatePaymentWithInitialState() {
@@ -24,7 +25,8 @@ class PaymentTests {
                 AMOUNT,
                 CURRENCY,
                 PaymentMethod.PIX,
-                EXTERNAL_REFERENCE
+                EXTERNAL_REFERENCE,
+                IDEMPOTENCY_KEY
         );
 
         assertThat(payment.getId()).isNotNull();
@@ -43,11 +45,13 @@ class PaymentTests {
                 "BRL",
                 PaymentMethod.CREDIT_CARD,
                 "ORDER-1",
+                IDEMPOTENCY_KEY,
                 PaymentStatus.CREATED,
                 createdAt
         );
 
         assertThat(payment.getId()).isEqualTo(id);
+        assertThat(payment.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CREATED);
         assertThat(payment.getCreatedAt()).isEqualTo(createdAt);
     }
@@ -58,22 +62,55 @@ class PaymentTests {
                 new BigDecimal("1.999"),
                 "BRL",
                 PaymentMethod.PIX,
-                "ORDER-1"
+                "ORDER-1",
+                IDEMPOTENCY_KEY
         )).isInstanceOf(DomainException.class);
 
         assertThatThrownBy(() -> Payment.create(
                 BigDecimal.ONE,
                 "REAL",
                 PaymentMethod.PIX,
-                "ORDER-1"
+                "ORDER-1",
+                IDEMPOTENCY_KEY
         )).isInstanceOf(DomainException.class);
 
         assertThatThrownBy(() -> Payment.create(
                 BigDecimal.ONE,
                 "BRL",
                 PaymentMethod.PIX,
-                "A".repeat(101)
+                "A".repeat(101),
+                IDEMPOTENCY_KEY
         )).isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    void shouldRejectInvalidIdempotencyKey() {
+        assertThatThrownBy(() -> Payment.create(
+                AMOUNT,
+                CURRENCY,
+                PaymentMethod.PIX,
+                EXTERNAL_REFERENCE,
+                null
+        )).isInstanceOf(DomainException.class)
+                .hasMessage("A chave de idempotência é obrigatória");
+
+        assertThatThrownBy(() -> Payment.create(
+                AMOUNT,
+                CURRENCY,
+                PaymentMethod.PIX,
+                EXTERNAL_REFERENCE,
+                " "
+        )).isInstanceOf(DomainException.class)
+                .hasMessage("A chave de idempotência é obrigatória");
+
+        assertThatThrownBy(() -> Payment.create(
+                AMOUNT,
+                CURRENCY,
+                PaymentMethod.PIX,
+                EXTERNAL_REFERENCE,
+                "A".repeat(101)
+        )).isInstanceOf(DomainException.class)
+                .hasMessage("A chave de idempotência deve possuir no máximo 100 caracteres");
     }
 
     @Test
@@ -203,6 +240,7 @@ class PaymentTests {
                 CURRENCY,
                 PaymentMethod.PIX,
                 EXTERNAL_REFERENCE,
+                IDEMPOTENCY_KEY,
                 status,
                 Instant.now()
         );

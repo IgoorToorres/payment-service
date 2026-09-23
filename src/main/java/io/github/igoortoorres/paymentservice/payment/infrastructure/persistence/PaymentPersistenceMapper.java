@@ -13,6 +13,7 @@ public class PaymentPersistenceMapper {
                 payment.getCurrency(),
                 payment.getPaymentMethod(),
                 payment.getExternalReference(),
+                payment.getIdempotencyKey(),
                 payment.getStatus(),
                 payment.getCreatedAt()
         );
@@ -25,6 +26,7 @@ public class PaymentPersistenceMapper {
                 entity.getCurrency(),
                 entity.getPaymentMethod(),
                 entity.getExternalReference(),
+                entity.getIdempotencyKey(),
                 entity.getStatus(),
                 entity.getCreatedAt()
         );

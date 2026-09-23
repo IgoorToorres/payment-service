@@ -3,6 +3,7 @@ package io.github.igoortoorres.paymentservice.payment.error;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -12,6 +13,24 @@ import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiErrorResponse> handleMissingRequestHeader(
+            MissingRequestHeaderException exception,
+            HttpServletRequest request
+    ) {
+        String message = "Idempotency-Key".equals(exception.getHeaderName())
+                ? "O header Idempotency-Key é obrigatório"
+                : "O header %s é obrigatório".formatted(exception.getHeaderName());
+
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "Invalid request",
+                message,
+                request.getRequestURI(),
+                List.of()
+        );
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValidException(
@@ -58,6 +77,20 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 HttpStatus.NOT_FOUND,
                 "Not found",
+                exception.getMessage(),
+                request.getRequestURI(),
+                List.of()
+        );
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleIdempotencyConflict(
+            IdempotencyConflictException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "Conflict",
                 exception.getMessage(),
                 request.getRequestURI(),
                 List.of()

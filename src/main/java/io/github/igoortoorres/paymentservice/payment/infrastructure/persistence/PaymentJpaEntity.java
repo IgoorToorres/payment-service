@@ -29,6 +29,9 @@ public class PaymentJpaEntity {
     @Column(name = "external_reference", nullable = false, length = 100)
     private String externalReference;
 
+    @Column(name = "idempotency_key", nullable = false, unique = true, length = 100)
+    private String idempotencyKey;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private PaymentStatus status;
@@ -45,6 +48,7 @@ public class PaymentJpaEntity {
             String currency,
             PaymentMethod paymentMethod,
             String externalReference,
+            String idempotencyKey,
             PaymentStatus status,
             Instant createdAt
     ) {
@@ -53,6 +57,7 @@ public class PaymentJpaEntity {
         this.currency = currency;
         this.paymentMethod = paymentMethod;
         this.externalReference = externalReference;
+        this.idempotencyKey = idempotencyKey;
         this.status = status;
         this.createdAt = createdAt;
     }

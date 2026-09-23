@@ -28,6 +28,20 @@ public class JpaPaymentRepositoryAdapter implements PaymentRepository {
     }
 
     @Override
+    public boolean saveIfIdempotencyKeyAbsent(Payment payment) {
+        return jpaRepository.insertIfIdempotencyKeyAbsent(
+                payment.getId(),
+                payment.getAmount(),
+                payment.getCurrency(),
+                payment.getPaymentMethod().name(),
+                payment.getExternalReference(),
+                payment.getIdempotencyKey(),
+                payment.getStatus().name(),
+                payment.getCreatedAt()
+        ) == 1;
+    }
+
+    @Override
     public Optional<Payment> findById(UUID id) {
         return jpaRepository.findById(id).map(mapper::toDomain);
     }
@@ -38,5 +52,11 @@ public class JpaPaymentRepositoryAdapter implements PaymentRepository {
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public Optional<Payment> findByIdempotencyKey(String idempotencyKey) {
+        return jpaRepository.findByIdempotencyKey(idempotencyKey)
+                .map(mapper::toDomain);
     }
 }

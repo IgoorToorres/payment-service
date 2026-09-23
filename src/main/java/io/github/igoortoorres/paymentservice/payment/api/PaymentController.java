@@ -4,6 +4,7 @@ import io.github.igoortoorres.paymentservice.payment.api.dto.CreatePaymentReques
 import io.github.igoortoorres.paymentservice.payment.api.dto.PaymentResponse;
 import io.github.igoortoorres.paymentservice.payment.api.mapper.PaymentMapper;
 import io.github.igoortoorres.paymentservice.payment.application.CreatePaymentCommand;
+import io.github.igoortoorres.paymentservice.payment.application.CreatePaymentResult;
 import io.github.igoortoorres.paymentservice.payment.application.PaymentService;
 import io.github.igoortoorres.paymentservice.payment.domain.Payment;
 import io.github.igoortoorres.paymentservice.payment.error.ApiErrorResponse;
@@ -44,18 +45,36 @@ public class PaymentController {
                     content = @Content(schema = @Schema(implementation = PaymentResponse.class))
             ),
             @ApiResponse(
+                    responseCode = "200",
+                    description = "Pagamento já existente retornado por idempotência",
+                    content = @Content(schema = @Schema(implementation = PaymentResponse.class))
+            ),
+            @ApiResponse(
                     responseCode = "400",
                     description = "Dados do pagamento inválidos",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Chave de idempotência reutilizada com dados diferentes",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public ResponseEntity<PaymentResponse> create(@Valid @RequestBody CreatePaymentRequest request){
-        CreatePaymentCommand command = mapper.toCommand(request);
-        Payment payment = paymentService.create(command);
-        PaymentResponse response =  mapper.toResponse(payment);
+    public ResponseEntity<PaymentResponse> create(
+            @Parameter(
+                    description = "Chave única que impede a criação duplicada do pagamento",
+                    required = true,
+                    example = "payment-order-92831"
+            )
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody CreatePaymentRequest request
+    ) {
+        CreatePaymentCommand command = mapper.toCommand(request, idempotencyKey);
+        CreatePaymentResult result = paymentService.create(command);
+        PaymentResponse response = mapper.toResponse(result.payment());
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
+                .status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .body(response);
     }
 

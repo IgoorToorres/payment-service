@@ -9,7 +9,8 @@ public record CreatePaymentCommand(
         BigDecimal amount,
         String currency,
         PaymentMethod paymentMethod,
-        String externalReference
+        String externalReference,
+        String idempotencyKey
 ) {
 }
 

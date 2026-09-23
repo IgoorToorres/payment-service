@@ -10,12 +10,16 @@ import java.util.List;
 
 @Component
 public class PaymentMapper {
-    public CreatePaymentCommand toCommand(CreatePaymentRequest request){
+    public CreatePaymentCommand toCommand(
+            CreatePaymentRequest request,
+            String idempotencyKey
+            ){
         return new CreatePaymentCommand(
                 request.amount(),
                 request.currency(),
                 request.paymentMethod(),
-                request.externalReference()
+                request.externalReference(),
+                idempotencyKey
         );
     }
 

@@ -2393,8 +2393,8 @@ O objetivo é conseguir abrir qualquer parte deste projeto e explicar:
 [x] Etapa 0 — Preparação
 [x] Etapa 1 — API inicial
 [x] Etapa 2 — PostgreSQL
-[ ] Etapa 3 — Regras de domínio
-[ ] Etapa 4 — Idempotência
+[x] Etapa 3 — Regras de domínio
+[x] Etapa 4 — Idempotência
 [ ] Etapa 5 — Testes
 [ ] Etapa 6 — Docker
 [ ] Etapa 7 — Introdução ao Kafka
@@ -2425,9 +2425,9 @@ O objetivo é conseguir abrir qualquer parte deste projeto e explicar:
 Começar exclusivamente pela:
 
 ```text
-ETAPA 3 — Regras de domínio
+ETAPA 5 — Testes
 ```
 
-Antes de implementar, definir os estados do pagamento, suas transições válidas e quais operações serão responsáveis por cada mudança de estado.
+Antes de implementar, estudar a diferença entre testes unitários, testes de integração e testes com dependências reais usando Testcontainers.
 
 **Não pular etapas.**

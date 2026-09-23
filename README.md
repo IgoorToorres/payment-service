@@ -682,10 +682,23 @@ Esse comando inicia o PostgreSQL com Docker Compose e depois inicia a aplicaçã
 Outros comandos disponíveis:
 
 ```bash
-make test     # inicia o PostgreSQL e executa os testes
+make test     # executa os testes com um PostgreSQL temporário
 make db-up    # inicia somente o PostgreSQL
 make db-down  # encerra o PostgreSQL
 ```
+
+Para executar `make test`, o Docker deve estar ativo. Os testes de integração
+usam Testcontainers para criar um PostgreSQL isolado, executar as migrations do
+Flyway e remover o container ao final da suíte. Não é necessário iniciar o banco
+do Docker Compose antes dos testes.
+
+Os testes estão separados por responsabilidade:
+
+- testes unitários validam as regras de domínio e os casos de uso com JUnit,
+  Mockito e AssertJ;
+- testes de persistência validam o adapter JPA contra PostgreSQL real;
+- testes da API usam RestAssured e uma aplicação iniciada em porta aleatória para
+  validar requisições e respostas HTTP reais.
 
 Para visualizar e testar os endpoints pelo Swagger UI, acesse:
 
@@ -2395,7 +2408,7 @@ O objetivo é conseguir abrir qualquer parte deste projeto e explicar:
 [x] Etapa 2 — PostgreSQL
 [x] Etapa 3 — Regras de domínio
 [x] Etapa 4 — Idempotência
-[ ] Etapa 5 — Testes
+[x] Etapa 5 — Testes
 [ ] Etapa 6 — Docker
 [ ] Etapa 7 — Introdução ao Kafka
 [ ] Etapa 8 — Kafka aplicado
@@ -2425,9 +2438,11 @@ O objetivo é conseguir abrir qualquer parte deste projeto e explicar:
 Começar exclusivamente pela:
 
 ```text
-ETAPA 5 — Testes
+ETAPA 6 — Docker local
 ```
 
-Antes de implementar, estudar a diferença entre testes unitários, testes de integração e testes com dependências reais usando Testcontainers.
+Antes de implementar, estudar imagem, container, volume, rede, mapeamento de
+portas e variáveis de ambiente. O objetivo será criar a imagem da aplicação e
+executar `payment-service` e PostgreSQL juntos com Docker Compose.
 
 **Não pular etapas.**

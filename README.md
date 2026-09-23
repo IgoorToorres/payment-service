@@ -685,6 +685,9 @@ Outros comandos disponíveis:
 make test     # executa os testes com um PostgreSQL temporário
 make db-up    # inicia somente o PostgreSQL
 make db-down  # encerra o PostgreSQL
+make docker-up    # constrói e inicia a aplicação e o PostgreSQL
+make docker-down  # encerra os containers
+make docker-logs  # acompanha os logs da aplicação
 ```
 
 Para executar `make test`, o Docker deve estar ativo. Os testes de integração
@@ -710,6 +713,36 @@ O contrato OpenAPI em JSON fica disponível em:
 
 ```text
 http://localhost:8080/v3/api-docs
+```
+
+## Executar todo o ambiente com Docker
+
+Para personalizar portas ou credenciais locais, copie o arquivo de exemplo:
+
+```bash
+cp .env.example .env
+```
+
+Depois, construa a imagem e inicie a aplicação com o PostgreSQL:
+
+```bash
+make docker-up
+```
+
+O Compose espera o PostgreSQL ficar saudável antes de iniciar a aplicação. A
+aplicação executa as migrations do Flyway e fica disponível na porta `8080` por
+padrão. Verifique o estado dos containers e o health check com:
+
+```bash
+docker compose ps
+curl http://localhost:8080/actuator/health
+```
+
+O volume `payment_postgres_data` mantém os dados entre reinicializações dos
+containers. Para encerrar o ambiente sem apagar esse volume, execute:
+
+```bash
+make docker-down
 ```
 
 ---
@@ -750,7 +783,9 @@ sistema-pagamentos-reconciliacao/
 ├── .github/
 │   └── workflows/
 │
-├── docker-compose.yml
+├── Dockerfile
+├── .dockerignore
+├── compose.yaml
 ├── .env.example
 ├── .gitignore
 └── README.md
@@ -2409,7 +2444,7 @@ O objetivo é conseguir abrir qualquer parte deste projeto e explicar:
 [x] Etapa 3 — Regras de domínio
 [x] Etapa 4 — Idempotência
 [x] Etapa 5 — Testes
-[ ] Etapa 6 — Docker
+[x] Etapa 6 — Docker
 [ ] Etapa 7 — Introdução ao Kafka
 [ ] Etapa 8 — Kafka aplicado
 [ ] Etapa 9 — Transactional Outbox
@@ -2438,11 +2473,11 @@ O objetivo é conseguir abrir qualquer parte deste projeto e explicar:
 Começar exclusivamente pela:
 
 ```text
-ETAPA 6 — Docker local
+ETAPA 7 — Introdução ao Kafka
 ```
 
-Antes de implementar, estudar imagem, container, volume, rede, mapeamento de
-portas e variáveis de ambiente. O objetivo será criar a imagem da aplicação e
-executar `payment-service` e PostgreSQL juntos com Docker Compose.
+Antes de escrever código, realizar a aula de Kafka descrita neste README e
+compreender broker, tópico, partition, producer, consumer, offset, consumer
+group, retention, acknowledgements e garantias de entrega.
 
 **Não pular etapas.**
